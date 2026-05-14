@@ -1,0 +1,17 @@
+# Exclude JSON data files from GitHub's language statistics
+*.json linguist-vendored
+
+# Exclude markdown docs from language statistics (optional, but keeps focus on code)
+*.md linguist-vendored
+
+# Exclude SVG icons/images from language statistics
+*.svg linguist-vendored
+
+# Explicitly mark frontend code so it is counted properly
+*.js linguist-detectable
+*.jsx linguist-detectable
+*.css linguist-detectable
+*.html linguist-detectable
+
+# Explicitly mark backend code
+*.py linguist-detectable
