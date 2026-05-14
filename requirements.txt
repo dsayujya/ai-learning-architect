@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+langgraph
+langchain-core
+networkx
+scikit-learn
+faiss-cpu
+torch
+numpy
