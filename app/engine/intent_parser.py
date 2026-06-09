@@ -104,14 +104,8 @@ class IntentParser:
                     round(float(score), 4)
                 ))
 
-        # Safety net: if nothing passed threshold, return the single best match
-        if not results and indices[0][0] != -1:
-            idx = int(indices[0][0])
-            results.append((
-                self._topic_ids[idx],
-                self._topic_names[idx],
-                round(float(scores[0][0]), 4)
-            ))
+        # No safety net: if nothing passed the minimum similarity threshold,
+        # we return an empty list to indicate the goal is out of context.
 
         print(
             f"[FAISS Intent] Goal: '{goal}' -> "

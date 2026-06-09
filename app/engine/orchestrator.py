@@ -156,25 +156,58 @@ class PathInferenceEngine:
                 "priorities": [],
             }
 
-        # Build subgraph tensors for GNN inference
-        subgraph = self.kg.graph.subgraph(path_nodes).copy()
-        node_list = list(subgraph.nodes())
-
-        features, adj = GNNTrainer.build_subgraph_tensors(
-            subgraph, self.kg.node_embeddings, node_list
+        # 1. Run GNN on the full graph to ensure stable predictions matching training distribution
+        node_list_full = list(self.kg.graph.nodes())
+        trainer = GNNTrainer(self.gnn)
+        features_full, adj_full, _, _ = trainer.prepare_training_data(
+            self.kg.graph, self.kg.node_embeddings, node_list_full
         )
 
-        # GNN inference: readiness scores + priority labels
-        readiness_scores, priorities = self.gnn.predict(features, adj)
+        readiness_scores_full, priorities_full = self.gnn.predict(features_full, adj_full)
+        node_to_idx_full = {node: i for i, node in enumerate(node_list_full)}
 
-        # Sort by GNN readiness score (highest first = learn this first)
-        indexed = list(zip(node_list, readiness_scores, priorities))
-        indexed.sort(key=lambda x: x[1], reverse=True)
+        # Create mapping of node -> score/priority
+        readiness_map = {node: readiness_scores_full[node_to_idx_full[node]] for node in path_nodes}
+        priority_map = {node: priorities_full[node_to_idx_full[node]] for node in path_nodes}
+
+        # 2. Perform GNN-guided Kahn's topological sort to guarantee strict dependency ordering
+        subgraph = self.kg.graph.subgraph(path_nodes).copy()
+        
+        in_degree = {u: 0 for u in subgraph.nodes()}
+        for u, v in subgraph.edges():
+            in_degree[v] += 1
+
+        queue = [u for u in subgraph.nodes() if in_degree[u] == 0]
+        # Sort queue: highest readiness score first
+        queue.sort(key=lambda x: readiness_map[x], reverse=True)
+
+        ordered_nodes = []
+        while queue:
+            curr = queue.pop(0)
+            ordered_nodes.append(curr)
+
+            for succ in list(subgraph.successors(curr)):
+                in_degree[succ] -= 1
+                if in_degree[succ] == 0:
+                    queue.append(succ)
+
+            # Re-sort queue to pick the highest readiness node next
+            queue.sort(key=lambda x: readiness_map[x], reverse=True)
+
+        # Safety fallback: ensure no nodes are lost if a cycle is ever introduced
+        if len(ordered_nodes) < len(path_nodes):
+            remaining = [n for n in path_nodes if n not in ordered_nodes]
+            remaining.sort(key=lambda x: readiness_map[x], reverse=True)
+            ordered_nodes.extend(remaining)
+
+        # Retrieve scores and priorities in the final topological order
+        ordered_readiness = [readiness_map[node] for node in ordered_nodes]
+        ordered_priorities = [priority_map[node] for node in ordered_nodes]
 
         return {
-            "ordered_nodes": [x[0] for x in indexed],
-            "readiness_scores": [x[1] for x in indexed],
-            "priorities": [x[2] for x in indexed],
+            "ordered_nodes": ordered_nodes,
+            "readiness_scores": ordered_readiness,
+            "priorities": ordered_priorities,
         }
 
     def enrich_resources(self, state: AgentState):

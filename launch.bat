@@ -6,7 +6,7 @@ echo ====================================================
 echo.
 
 echo [1] Starting Python FastAPI Backend Engine...
-start cmd /k "title AI-Backend & cd /d %~dp0 & python -m uvicorn app.main:app --port 8000"
+start cmd /k "title AI-Backend & cd /d %~dp0 & python -m uvicorn app.main:app --reload --port 8000"
 
 :: Adding a small 2-second delay to ensure backend binds to port first
 ping 127.0.0.1 -n 3 >nul

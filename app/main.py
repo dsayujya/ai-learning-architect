@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.schemas import RoadmapRequest, RoadmapResponse
@@ -34,6 +34,12 @@ def read_root():
 @app.post("/generate_roadmap", response_model=RoadmapResponse)
 def generate_roadmap(request: RoadmapRequest):
     result_state = engine.generate_roadmap(request.goal, request.current_skills)
+
+    if not result_state.get("target_nodes"):
+        raise HTTPException(
+            status_code=400,
+            detail="The requested goal is out of context of the curriculum. Please try a query related to software engineering, computer science, mathematics, or design."
+        )
 
     return RoadmapResponse(
         goal=result_state["goal"],
