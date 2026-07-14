@@ -17,6 +17,8 @@ body {
 .app-container {
   display: flex;
   height: 100vh;
+  padding-top: 2.75rem;
+  box-sizing: border-box;
   overflow: hidden;
 }
 

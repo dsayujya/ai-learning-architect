@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import GraphMap from './GraphMap';
 
 export default function App() {
+  const navigate = useNavigate();
   const [goal, setGoal] = useState('');
   const [skills, setSkills] = useState('');
   const [roadmap, setRoadmap] = useState([]);
@@ -18,7 +20,7 @@ export default function App() {
 
     try {
       const skillsArray = skills.split(',').map(s => s.trim()).filter(s => s);
-      const res = await fetch('http://127.0.0.1:8000/generate_roadmap', {
+      const res = await fetch('http://localhost:8000/generate_roadmap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
@@ -59,6 +61,32 @@ export default function App() {
 
   return (
     <div className="app-container">
+      {/* ── Back to Landing nav ── */}
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        height: '2.75rem',
+        background: 'rgba(10,10,15,0.85)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        display: 'flex', alignItems: 'center', padding: '0 1.5rem', gap: '1rem'
+      }}>
+        <button
+          onClick={() => navigate('/')}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#d2bbff', fontSize: '0.8rem', fontFamily: 'Inter, sans-serif',
+            display: 'flex', alignItems: 'center', gap: '0.4rem',
+            padding: '0.25rem 0.6rem', borderRadius: '0.4rem',
+            transition: 'background 0.2s ease',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,58,237,0.15)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+        >
+          ← Back to Home
+        </button>
+        <span style={{ color: '#4a4455', fontSize: '0.75rem' }}>|</span>
+        <span style={{ color: '#958da1', fontSize: '0.8rem', fontFamily: 'Geist, monospace' }}>AI Learning Architect · v2.0</span>
+      </div>
       <div className="sidebar">
         <div className="header">
           <h1>Learning Architect 101</h1>
